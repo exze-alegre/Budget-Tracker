@@ -52,12 +52,11 @@ class BudgetTracker:
     """ACCOUNTS"""
 
     def create_accounts_tab(self):
-        self.deletion_mode = False  # flag to track deletion mode
+        self.deletion_mode = False
 
         frame = ttk.Frame(self.accounts_tab)
         frame.pack(expand=True, fill="both", padx=10, pady=10)
 
-        # Add a fourth column for deletion actions.
         columns = ("Account Type", "Account Name", "Balance", "Delete")
         self.accounts_tree = ttk.Treeview(frame, columns=columns, show="headings")
 
@@ -69,16 +68,13 @@ class BudgetTracker:
         self.accounts_tree.column("Account Type", width=75, anchor="w")
         self.accounts_tree.column("Account Name", anchor="w")
         self.accounts_tree.column("Balance", width=75, anchor="e")
-        # Initially hide the Delete column
         self.accounts_tree.column("Delete", width=-1, anchor="center")
 
         self.accounts_tree["displaycolumns"] = ("Account Type", "Account Name", "Balance")
 
         self.accounts_tree.pack(fill="both", expand=True)
-        # Bind clicks to handle delete clicks when deletion mode is active.
         self.accounts_tree.bind("<ButtonRelease-1>", self.on_treeview_click)
 
-        # "Add accounts +" button as before.
         add_accounts_button = ttk.Button(
             self.accounts_tab,
             text="Add accounts +",
@@ -87,7 +83,6 @@ class BudgetTracker:
         )
         add_accounts_button.place(relx=0.88, rely=0.94, anchor="center")
 
-        # New "Delete accounts" button toggles deletion mode.
         delete_accounts_button = ttk.Button(
             self.accounts_tab,
             text="Delete accounts",
@@ -97,17 +92,10 @@ class BudgetTracker:
         delete_accounts_button.place(relx=0.68, rely=0.94, anchor="center")
 
     def toggle_deletion_mode(self):
-        """
-        Toggles deletion mode. When on, the Delete column is shown
-        and populated with "Delete" text; when off, the column is hidden.
-        """
         self.deletion_mode = not self.deletion_mode
         if self.deletion_mode:
-            # Update displaycolumns to include the "Delete" column.
             self.accounts_tree["displaycolumns"] = ("Account Type", "Account Name", "Balance", "Delete")
-            # Show the Delete column by setting its width and minwidth
             self.accounts_tree.column("Delete", width=75, minwidth=75, anchor="center")
-            # Update each item's fourth value to "Delete"
             for item in self.accounts_tree.get_children():
                 values = list(self.accounts_tree.item(item, "values"))
                 if len(values) < 4:
@@ -116,22 +104,16 @@ class BudgetTracker:
                     values[3] = "Delete"
                 self.accounts_tree.item(item, values=tuple(values))
         else:
-            # Hide the Delete column by removing it from displaycolumns and setting width to 0.
             self.accounts_tree["displaycolumns"] = ("Account Type", "Account Name", "Balance")
             self.accounts_tree.column("Delete", width=0, minwidth=0, anchor="center")
 
     def on_treeview_click(self, event):
-        """
-        Checks if the user clicked on the Delete column (fourth column).
-        If so and deletion mode is on, prompts for confirmation and deletes the row.
-        """
         if not self.deletion_mode:
             return
 
         region = self.accounts_tree.identify("region", event.x, event.y)
         if region == "cell":
             col = self.accounts_tree.identify_column(event.x)
-            # "#4" corresponds to the fourth column (the "Delete" column)
             if col == "#4":
                 item = self.accounts_tree.identify_row(event.y)
                 if item:
@@ -169,10 +151,8 @@ class BudgetTracker:
             try:
                 balance = float(balance)
                 formatted_balance = f"₱ {balance:,.2f}"
-                # Include a fourth value ("Delete") for the Delete column.
                 item = self.accounts_tree.insert("", tk.END,
                                                  values=(self.account_type, account_name, formatted_balance, "Delete"))
-                # Configure tags as needed.
                 self.accounts_tree.item(item, tags=("account_name", "account_type", "balance"))
                 self.accounts_tree.tag_configure("account_name", font=("Arial", 10, "bold"), foreground="black")
                 self.accounts_tree.tag_configure("account_type", font=("Arial", 10), foreground="gray")
@@ -196,7 +176,6 @@ class BudgetTracker:
             for item in self.accounts_tree.get_children():
                 values = self.accounts_tree.item(item, "values")
                 if values[1] == account_name:
-                    # Remove currency symbols and commas to convert string to float
                     current_balance = float(values[2].replace("₱", "").replace(",", "").strip())
                     new_balance = current_balance - amount
                     formatted_balance = f"₱ {new_balance:,.2f}"
@@ -232,7 +211,6 @@ class BudgetTracker:
         self.savings_icon = Image.open("icons/money.png").resize((20, 20), Image.LANCZOS)
         self.savings_photo = ImageTk.PhotoImage(self.savings_icon)
 
-        # Buttons with icons
         ttk.Button(
             content_frame,
             text="Regular\nCash, Car...",
@@ -268,7 +246,6 @@ class BudgetTracker:
     """CATEGORIES"""
 
     def create_categories_tab(self):
-        # Ensure default categories exist
         if not hasattr(self, "categories") or not self.categories:
             self.categories = {
                 "expenses": [
@@ -287,15 +264,12 @@ class BudgetTracker:
                 ]
             }
 
-        # Clear previous widgets
         for widget in self.categories_tab.winfo_children():
             widget.destroy()
 
-        # Delegate to update_categories_display for consistent rendering
         self.update_categories_display()
 
     def update_categories_display(self):
-        # Clear previous widgets
         for widget in self.categories_tab.winfo_children():
             widget.destroy()
 
@@ -304,13 +278,11 @@ class BudgetTracker:
         for col in range(6):
             frame.grid_columnconfigure(col, weight=1)
 
-        self.category_images = []  # keep image references
+        self.category_images = []
 
-        # If in edit mode, prepare dictionary to store checkbox variables
         if self.edit_mode:
             self.category_check_vars = {"expenses": {}, "income": {}}
 
-        # --- Expenses Section ---
         expenses_label = ttk.Label(frame, text="Expenses", font=("Arial", 12, "bold"))
         expenses_label.pack(fill="x", pady=(0, 5))
 
@@ -334,20 +306,16 @@ class BudgetTracker:
             label.pack()
 
             if not self.edit_mode:
-                # Normal mode: add hover and click bindings.
                 label.bind("<Enter>", lambda event, f=category_frame: f.config(relief="solid"))
                 label.bind("<Leave>", lambda event, f=category_frame: f.config(relief="flat"))
                 label.bind("<Button-1>", lambda event, c=category: self.show_add_transaction(c))
             else:
-                # Edit mode: add a checkbox for deletion, centered below the icon.
                 var = tk.BooleanVar()
                 self.category_check_vars["expenses"][i] = var
                 cb = ttk.Checkbutton(category_frame, variable=var,
                                      command=self.update_delete_button_visibility)
                 cb.pack(anchor="center", pady=2)
 
-        # In edit mode, add a plus icon button for adding a new expense category,
-        # with a caption underneath in the same style as the other icons.
         if self.edit_mode:
             try:
                 plus_img = Image.open("icons/add.png").resize((70, 70), Image.LANCZOS)
@@ -363,7 +331,6 @@ class BudgetTracker:
             caption = ttk.Label(plus_frame, text="add category", font=("Arial", 10))
             caption.pack()
 
-        # --- Income Section ---
         income_label = ttk.Label(frame, text="Income", font=("Arial", 12, "bold"))
         income_label.pack(fill="x", pady=(10, 5))
 
@@ -412,7 +379,6 @@ class BudgetTracker:
             caption = ttk.Label(plus_frame, text="add category", font=("Arial", 10))
             caption.pack()
 
-        # Bottom button to toggle edit mode
         edit_button = ttk.Button(
             self.categories_tab,
             text="Cancel Edit" if self.edit_mode else "Edit Categories",
@@ -421,18 +387,15 @@ class BudgetTracker:
         )
         edit_button.place(relx=0.88, rely=0.9, anchor="center")
 
-        # If not in edit mode, remove any lingering delete button.
         if not self.edit_mode and hasattr(self, "delete_button") and self.delete_button is not None:
             self.delete_button.destroy()
             self.delete_button = None
 
     def toggle_edit_mode(self):
-        """Toggle between edit and normal mode and refresh display."""
         self.edit_mode = not self.edit_mode
         self.update_categories_display()
 
     def update_delete_button_visibility(self):
-        """Show or hide the Delete Selected button based on checkbox selection."""
         if not self.edit_mode:
             if hasattr(self, "delete_button") and self.delete_button is not None:
                 self.delete_button.destroy()
@@ -452,7 +415,6 @@ class BudgetTracker:
                 self.delete_button = None
 
     def delete_selected_categories(self):
-        """Delete categories that have been checked for removal."""
         new_expenses = []
         for i, cat in enumerate(self.categories.get("expenses", [])):
             if i in self.category_check_vars["expenses"] and self.category_check_vars["expenses"][i].get():
@@ -570,7 +532,6 @@ class BudgetTracker:
         if self.modal is not None:
             return
 
-        # Determine if this is an income transaction by checking if the category is in the income section
         is_income = False
         if "income" in self.categories:
             income_names = [cat["name"] for cat in self.categories["income"]]
@@ -582,12 +543,10 @@ class BudgetTracker:
         self.modal = ttk.Frame(self.overlay, relief="raised", borderwidth=2)
         self.modal.place(relx=0.5, rely=0.5, anchor="center", width=300, height=420)
 
-        # Top row frame with different labels depending on transaction type
         top_frame = ttk.Frame(self.modal)
         top_frame.pack(fill="x", padx=10, pady=10)
 
         if is_income:
-            # For income: left side shows the category, right side allows account selection.
             left_frame = ttk.Frame(top_frame)
             left_frame.pack(side="left", expand=True, fill="both", padx=5)
             ttk.Label(left_frame, text="From Category", font=("Arial", 8)).pack()
@@ -598,18 +557,15 @@ class BudgetTracker:
             ttk.Label(right_frame, text="To Account", font=("Arial", 8)).pack()
             self.to_account_label = ttk.Label(right_frame, text="Cash", font=("Arial", 12, "bold"))
             self.to_account_label.pack()
-            # Pass self.to_account_label as the target
             right_frame.bind("<Button-1>", lambda event: self.show_select_account_modal(self.to_account_label))
             for widget in right_frame.winfo_children():
                 widget.bind("<Button-1>", lambda event: self.show_select_account_modal(self.to_account_label))
         else:
-            # For expenses: left side is account, right side is category.
             left_frame = ttk.Frame(top_frame)
             left_frame.pack(side="left", expand=True, fill="both", padx=5)
             ttk.Label(left_frame, text="From Account", font=("Arial", 8)).pack()
             self.from_account_label = ttk.Label(left_frame, text="Cash", font=("Arial", 12, "bold"))
             self.from_account_label.pack()
-            # Pass self.from_account_label as the target
             left_frame.bind("<Button-1>", lambda event: self.show_select_account_modal(self.from_account_label))
             for widget in left_frame.winfo_children():
                 widget.bind("<Button-1>", lambda event: self.show_select_account_modal(self.from_account_label))
@@ -619,7 +575,6 @@ class BudgetTracker:
             ttk.Label(right_frame, text="To Category", font=("Arial", 8)).pack()
             ttk.Label(right_frame, text=category["name"], font=("Arial", 12, "bold")).pack()
 
-        # Input field for the transaction amount
         input_var = tk.StringVar(value="₱")
         input_entry = tk.Entry(self.modal, textvariable=input_var, font=("Arial", 18), bd=0, justify="center")
 
@@ -647,7 +602,6 @@ class BudgetTracker:
         input_entry.focus_set()
         input_entry.icursor(tk.END)
 
-        # Notes field with placeholder behavior
         def on_focus_in(event):
             if notes_entry.get() == "Notes...":
                 notes_entry.delete(0, tk.END)
@@ -664,7 +618,6 @@ class BudgetTracker:
         notes_entry.bind("<FocusOut>", on_focus_out)
         notes_entry.pack(fill="x", padx=10, pady=5)
 
-        # Calculator-style layout
         calc_frame = ttk.Frame(self.modal)
         calc_frame.pack(pady=10, fill="both", expand=True)
 
@@ -711,12 +664,10 @@ class BudgetTracker:
         for c in range(5):
             calc_frame.grid_columnconfigure(c, weight=1, minsize=45)
 
-        # Button frame with Save and Cancel buttons
         button_frame = ttk.Frame(self.modal)
         button_frame.pack(fill='x', padx=10, pady=10)
 
         def save_transaction():
-            # For income, use the account from the right side label; for expense, from the left.
             if is_income:
                 account_used = self.to_account_label.cget("text")
             else:
@@ -726,7 +677,6 @@ class BudgetTracker:
             notes = notes_entry.get() if notes_entry.get() != "Notes..." else ""
             category_spent = category["name"]
 
-            # Convert input amount to a float and format display with a sign
             amount_numeric = amount_spent.replace("₱", "").strip()
             try:
                 amount_value = float(amount_numeric)
@@ -747,7 +697,6 @@ class BudgetTracker:
             }
             print("DEBUG: Storing transaction:", transaction)
             self.transactions.append(transaction)
-            # Update account balance accordingly: add for income, subtract for expense.
             if is_income:
                 self.add_to_account(account_used, amount_numeric)
             else:
@@ -761,28 +710,23 @@ class BudgetTracker:
         cancel_button.pack(side="right", padx=5)
 
     def show_select_account_modal(self, target_label):
-        # Set the target label where the selected account will be shown
         self.account_selection_target = target_label
 
-        # Create a new modal (Toplevel) for selecting an account
         self.account_modal = tk.Toplevel(self.root)
         self.account_modal.title("Select Account")
         self.account_modal.geometry("300x200")
-        self.open_centered_window(self.account_modal, 200, 200)  # Example size
+        self.open_centered_window(self.account_modal, 200, 200)
 
         frame = ttk.Frame(self.account_modal)
         frame.pack(expand=True, fill="both", padx=10, pady=10)
 
-        # Get account names from the accounts_tree.
         account_ids = self.accounts_tree.get_children()
         accounts = []
         for aid in account_ids:
             values = self.accounts_tree.item(aid, "values")
-            # Assuming the account name is the second column
             if len(values) >= 2:
                 accounts.append(values[1])
 
-        # If no accounts are found, fall back to a dummy list
         if not accounts:
             accounts = ["Cash", "Savings", "Credit Card", "Investments"]
 
@@ -826,17 +770,13 @@ class BudgetTracker:
             weekday = dt.strftime("%A")
             month_year = dt.strftime("%B %Y")
 
-            # Build a math equation by concatenating the amount strings
             equation = ""
             for trans in transactions_by_date[date_str]:
-                # Remove currency symbols, commas, and spaces
                 amt_str = trans["amount"].replace("₱", "").replace(",", "").strip()
-                # Ensure an explicit sign is present; if not, assume positive
                 if not (amt_str.startswith('+') or amt_str.startswith('-')):
                     amt_str = "+" + amt_str
                 equation += amt_str
 
-            # Debug: print the equation for the day
             print("DEBUG: Equation for date", date_str, ":", equation)
 
             try:
@@ -845,7 +785,6 @@ class BudgetTracker:
                 print("DEBUG: Error evaluating equation for date", date_str, ":", e)
                 total_amount = 0.0
 
-            # Format the header amount to include a plus sign for positive totals (no extra spaces)
             if total_amount > 0:
                 header_amount = f"+₱{total_amount:,.2f}"
             elif total_amount < 0:
@@ -863,14 +802,11 @@ class BudgetTracker:
                 row_frame = ttk.Frame(frame)
                 row_frame.pack(fill="x", pady=5)
 
-                # Set default icon path
                 icon_path = "icons/placeholder.png"
                 if hasattr(self, "categories"):
-                    # Combine both income and expense categories into a single list
                     all_categories = []
                     for section in self.categories.values():
                         all_categories.extend(section)
-                    # Iterate through the combined list to find a matching category
                     for cat in all_categories:
                         if cat["name"] == trans["category"]:
                             icon_path = cat["icon"]
